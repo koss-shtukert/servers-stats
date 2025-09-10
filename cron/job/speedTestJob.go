@@ -88,10 +88,6 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, b *bot.Bot) func() {
 	}
 }
 
-func fmtMBps(mbps float64) string {
-	return fmt.Sprintf("%.2f MB/s", mbps)
-}
-
 func speedStatus(dlMbps, ulMbps, pingMs, lossPct float64) string {
 	expDown := 950.0
 	expUp := 950.0
@@ -134,8 +130,8 @@ func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
 			"🏷 ISP:      %s\n"+
 			"🗺 Server:   %s — %s (%s) • ID %s\n"+
 			"✅ Status:   %s",
-		fmtMBps(dlMbps),
-		fmtMBps(ulMbps),
+		fmt.Sprintf("%.2f MB/s", dlMbps),
+		fmt.Sprintf("%.2f MB/s", ulMbps),
 		pingMs,
 		isp,
 		s.Name, s.Country, s.Sponsor, s.ID,
