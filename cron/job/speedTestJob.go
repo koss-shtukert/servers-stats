@@ -115,8 +115,8 @@ func speedStatus(dlMbps, ulMbps, pingMs, lossPct float64) string {
 }
 
 func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
-	dlMbps := float64(s.DLSpeed / 1000.0)
-	ulMbps := float64(s.ULSpeed / 1000.0)
+	dlMbps := float64(s.DLSpeed / 1024.0)
+	ulMbps := float64(s.ULSpeed / 1024.0)
 	pingMs := float64(s.Latency) / float64(time.Millisecond)
 
 	status := speedStatus(dlMbps, ulMbps, pingMs, 0.0)
