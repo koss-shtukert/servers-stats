@@ -125,10 +125,6 @@ func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
 	if isp == "" {
 		isp = "n/a"
 	}
-	extIP := strings.TrimSpace(user.IP)
-	if extIP == "" {
-		extIP = "n/a"
-	}
 
 	return fmt.Sprintf(
 		"🚀 Ookla Speedtest\n\n"+
@@ -136,14 +132,12 @@ func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
 			"⬆️ Upload:   %s\n"+
 			"🕒 Ping:     %.1f ms\n"+
 			"🏷 ISP:      %s\n"+
-			"🌐 External: %s\n"+
 			"🗺 Server:   %s — %s (%s) • ID %s\n"+
 			"✅ Status:   %s",
 		fmtMBps(dlMbps),
 		fmtMBps(ulMbps),
 		pingMs,
 		isp,
-		extIP,
 		s.Name, s.Country, s.Sponsor, s.ID,
 		status,
 	)
