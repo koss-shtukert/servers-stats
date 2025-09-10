@@ -123,7 +123,8 @@ func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
 	}
 
 	return fmt.Sprintf(
-		"🚀 Ookla Speedtest\n\n"+
+		"\n"+
+			"🚀 Ookla Speedtest\n\n"+
 			"⬇️ Download: %s\n"+
 			"⬆️ Upload:   %s\n"+
 			"🕒 Ping:     %.1f ms\n"+
