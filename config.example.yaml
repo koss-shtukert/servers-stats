@@ -1,0 +1,17 @@
+# dev | stage | prod
+app_env: dev
+
+# panic | fatal | error | warn | info | debug | trace
+log_level: debug
+
+# cron
+cron_run_disk_usage_job: false
+cron_disk_usage_job_path: ""
+cron_disk_usage_job_interval: "1 * * * *"
+
+cron_run_speed_test_job: false
+cron_speed_test_job_interval: "1 * * * *"
+
+# tgbot
+tgbot_api_key: ""
+tgbot_chat_id: ""

@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  servers-stats:
+    container_name: servers-stats
+    build: .
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - /:/host:ro
