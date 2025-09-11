@@ -88,6 +88,35 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, b *bot.Bot) func() {
 	}
 }
 
+func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
+	dlMbps := s.DLSpeed.Mbps()
+	ulMbps := s.ULSpeed.Mbps()
+	pingMs := float64(s.Latency) / float64(time.Millisecond)
+
+	status := speedStatus(dlMbps, ulMbps, pingMs, 0.0)
+
+	isp := strings.TrimSpace(user.Isp)
+	if isp == "" {
+		isp = "n/a"
+	}
+
+	return fmt.Sprintf(
+		"🚀 Ookla Speedtest\n\n"+
+			"⬇️ Download: %.2f MB/s\n"+
+			"⬆️ Upload:   %.2f MB/s\n"+
+			"🕒 Ping:     %.1f ms\n"+
+			"🏷 ISP:      %s\n"+
+			"🗺 Server:   %s — %s (%s) • ID %s\n"+
+			"✅ Status:   %s",
+		dlMbps,
+		ulMbps,
+		pingMs,
+		isp,
+		s.Name, s.Country, s.Sponsor, s.ID,
+		status,
+	)
+}
+
 func speedStatus(dlMbps, ulMbps, pingMs, lossPct float64) string {
 	expDown := 950.0
 	expUp := 950.0
@@ -108,34 +137,4 @@ func speedStatus(dlMbps, ulMbps, pingMs, lossPct float64) string {
 		return "🟡 Degraded"
 	}
 	return "🟢 OK"
-}
-
-func formatSpeedtest(user *speedtest.User, s *speedtest.Server) string {
-	dlMbps := float64(s.DLSpeed / 1024.0)
-	ulMbps := float64(s.ULSpeed / 1024.0)
-	pingMs := float64(s.Latency) / float64(time.Millisecond)
-
-	status := speedStatus(dlMbps, ulMbps, pingMs, 0.0)
-
-	isp := strings.TrimSpace(user.Isp)
-	if isp == "" {
-		isp = "n/a"
-	}
-
-	return fmt.Sprintf(
-		"\n"+
-			"🚀 Ookla Speedtest\n\n"+
-			"⬇️ Download: %s\n"+
-			"⬆️ Upload:   %s\n"+
-			"🕒 Ping:     %.1f ms\n"+
-			"🏷 ISP:      %s\n"+
-			"🗺 Server:   %s — %s (%s) • ID %s\n"+
-			"✅ Status:   %s",
-		fmt.Sprintf("%.2f MB/s", dlMbps),
-		fmt.Sprintf("%.2f MB/s", ulMbps),
-		pingMs,
-		isp,
-		s.Name, s.Country, s.Sponsor, s.ID,
-		status,
-	)
 }
