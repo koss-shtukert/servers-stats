@@ -31,21 +31,22 @@ func ServerDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) 
 		for _, line := range strings.Split(out.String(), "\n") {
 			if strings.HasSuffix(line, path) {
 				fields := strings.Fields(line)
-				if len(fields) >= 5 {
-					used := fields[2]
-					avail := fields[3]
-					usageStr := fields[4]
-
-					percent := 0
-					if _, err := fmt.Sscanf(usageStr, "%d%%", &percent); err != nil {
-						l.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
-					}
-
-					n.SendMessage(formatServerDiskUsage(used, avail, usageStr, percent))
-
-					logger.Debug().Msg("Finished")
-					return
+				if len(fields) < 5 {
+					continue
 				}
+
+				used := fields[len(fields)-4]
+				avail := fields[len(fields)-3]
+				usageStr := fields[len(fields)-2]
+
+				percent := 0
+				if _, err := fmt.Sscanf(usageStr, "%d%%", &percent); err != nil {
+					l.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
+				}
+
+				n.SendMessage(formatServerDiskUsage(used, avail, usageStr, percent))
+				logger.Debug().Msg("Finished")
+				return
 			}
 		}
 
