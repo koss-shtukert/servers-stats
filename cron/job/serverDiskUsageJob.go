@@ -3,20 +3,20 @@ package job
 import (
 	"bytes"
 	"fmt"
-	"github.com/koss-shtukert/servers-stats/bot"
+	"github.com/koss-shtukert/servers-stats/common"
 	"github.com/koss-shtukert/servers-stats/config"
 	"github.com/rs/zerolog"
 	"os/exec"
 	"strings"
 )
 
-func DiskUsageJob(l *zerolog.Logger, c *config.Config, b *bot.Bot) func() {
+func ServerDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func() {
 	return func() {
-		logger := l.With().Str("type", "DiskUsageJob").Logger()
+		logger := l.With().Str("type", "ServerDiskUsageJob").Logger()
 
 		logger.Debug().Msg("Starting")
 
-		path := "/host" + c.CronDiskUsageJobPath
+		path := c.CronServerDiskUsageJobPath
 
 		cmd := exec.Command("sh", "-c", "df -h "+path)
 		var out, stderr bytes.Buffer
@@ -41,7 +41,7 @@ func DiskUsageJob(l *zerolog.Logger, c *config.Config, b *bot.Bot) func() {
 						l.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
 					}
 
-					b.SendMessage(formatDiskUsage(used, avail, usageStr, percent))
+					n.SendMessage(formatServerDiskUsage(used, avail, usageStr, percent))
 
 					logger.Debug().Msg("Finished")
 					return
@@ -53,7 +53,7 @@ func DiskUsageJob(l *zerolog.Logger, c *config.Config, b *bot.Bot) func() {
 	}
 }
 
-func formatDiskUsage(used, avail, usageStr string, percent int) string {
+func formatServerDiskUsage(used, avail, usageStr string, percent int) string {
 	status := "🟢 OK"
 	if percent >= 90 {
 		status = "🔴 CRITICAL"
@@ -62,11 +62,14 @@ func formatDiskUsage(used, avail, usageStr string, percent int) string {
 	}
 
 	return fmt.Sprintf(
-		"💾 Motioneye Disk Usage\n\n"+
+		"💾 Server disk usage\n\n"+
 			"📊 Used:    %s\n"+
 			"📦 Avail:   %s\n"+
 			"📈 Usage:   %s\n"+
 			"✅ Status:  %s",
-		used, avail, usageStr, status,
+		used,
+		avail,
+		usageStr,
+		status,
 	)
 }

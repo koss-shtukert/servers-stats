@@ -8,15 +8,24 @@ import (
 )
 
 type Config struct {
-	Environment              string `mapstructure:"app_env"`
-	LogLevel                 string `mapstructure:"log_level"`
-	CronRunDiskUsageJob      bool   `mapstructure:"cron_run_disk_usage_job"`
-	CronDiskUsageJobPath     string `mapstructure:"cron_disk_usage_job_path"`
-	CronDiskUsageJobInterval string `mapstructure:"cron_disk_usage_job_interval"`
-	CronRunSpeedTestJob      bool   `mapstructure:"cron_run_speed_test_job"`
-	CronSpeedTestJobInterval string `mapstructure:"cron_speed_test_job_interval"`
-	TgBotApiKey              string `mapstructure:"tgbot_api_key"`
-	TgBotChatId              string `mapstructure:"tgbot_chat_id"`
+	Environment                       string  `mapstructure:"app_env"`
+	LogLevel                          string  `mapstructure:"log_level"`
+	CronRunMotioneyeDiskUsageJob      bool    `mapstructure:"cron_run_motioneye_disk_usage_job"`
+	CronMotioneyeDiskUsageJobPath     string  `mapstructure:"cron_motioneye_disk_usage_job_path"`
+	CronMotioneyeDiskUsageJobInterval string  `mapstructure:"cron_motioneye_disk_usage_job_interval"`
+	CronRunServerDiskUsageJob         bool    `mapstructure:"cron_run_server_disk_usage_job"`
+	CronServerDiskUsageJobPath        string  `mapstructure:"cron_server_disk_usage_job_path"`
+	CronServerDiskUsageJobInterval    string  `mapstructure:"cron_server_disk_usage_job_interval"`
+	CronRunSpeedTestJob               bool    `mapstructure:"cron_run_speed_test_job"`
+	CronSpeedTestJobInterval          string  `mapstructure:"cron_speed_test_job_interval"`
+	CronSpeedTestJobExpDown           float64 `mapstructure:"cron_speed_test_job_exp_down"`
+	CronSpeedTestJobExpUp             float64 `mapstructure:"cron_speed_test_job_exp_up"`
+	CronSpeedTestJobWarnPct           float64 `mapstructure:"cron_speed_test_job_warn_pct"`
+	CronSpeedTestJobCritPct           float64 `mapstructure:"cron_speed_test_job_crit_pct"`
+	CronSpeedTestJobWarnLat           float64 `mapstructure:"cron_speed_test_job_warn_lat"`
+	CronSpeedTestJobCritLat           float64 `mapstructure:"cron_speed_test_job_crit_lat"`
+	TgBotApiKey                       string  `mapstructure:"tgbot_api_key"`
+	TgBotChatId                       string  `mapstructure:"tgbot_chat_id"`
 }
 
 func Load(path string) (*Config, error) {
@@ -50,8 +59,12 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if strings.TrimSpace(cfg.CronDiskUsageJobPath) == "" {
-		cfg.CronRunDiskUsageJob = false
+	if strings.TrimSpace(cfg.CronMotioneyeDiskUsageJobPath) == "" {
+		cfg.CronRunMotioneyeDiskUsageJob = false
+	}
+
+	if strings.TrimSpace(cfg.CronServerDiskUsageJobPath) == "" {
+		cfg.CronRunServerDiskUsageJob = false
 	}
 
 	required := map[string]string{

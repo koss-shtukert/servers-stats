@@ -5,5 +5,7 @@ services:
     container_name: servers-stats
     build: .
     restart: unless-stopped
+    ports:
+      - "1324:1324"
     volumes:
       - /:/host:ro

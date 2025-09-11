@@ -5,13 +5,25 @@ app_env: dev
 log_level: debug
 
 # cron
-cron_run_disk_usage_job: false
-cron_disk_usage_job_path: ""
-cron_disk_usage_job_interval: "1 * * * *"
+cron_run_motioneye_disk_usage_job: false
+cron_motioneye_disk_usage_job_path: "/media/motioneye"
+cron_motioneye_disk_usage_job_interval: "0 * * * *"
+
+cron_run_server_disk_usage_job: false
+cron_server_disk_usage_job_path: "/"
+cron_server_disk_usage_job_interval: "0 * * * *"
 
 cron_run_speed_test_job: false
-cron_speed_test_job_interval: "1 * * * *"
+cron_speed_test_job_interval: "*/30 * * * *"
+cron_speed_test_job_exp_down: 950.0
+cron_speed_test_job_exp_up: 950.0
+cron_speed_test_job_warn_pct: 0.80
+cron_speed_test_job_crit_pct: 0.60
+cron_speed_test_job_warn_lat: 25.0
+cron_speed_test_job_crit_lat: 40.0
+# cron
 
 # tgbot
 tgbot_api_key: ""
 tgbot_chat_id: ""
+# tgbot

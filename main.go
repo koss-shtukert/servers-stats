@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
+	"github.com/koss-shtukert/servers-stats/api"
 	"github.com/koss-shtukert/servers-stats/cron"
 	"log"
+	"os/signal"
+	"syscall"
 
 	"github.com/koss-shtukert/servers-stats/bot"
 	"github.com/koss-shtukert/servers-stats/config"
@@ -20,24 +24,38 @@ func main() {
 		log.Fatal("Logger error: ", err)
 	}
 
-	tgBot, err := bot.CreateBot(cfg.TgBotApiKey, cfg.TgBotChatId, &logr)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	tgBot, err := bot.CreateBot(cfg, &logr)
 	if err != nil {
 		log.Fatal("Telegram bot error: ", err)
 	}
 
 	cronJob := cron.NewCron(&logr, cfg, tgBot)
 
-	if cfg.CronRunDiskUsageJob {
-		cronJob.AddDiskUsageJob()
+	if cfg.CronRunMotioneyeDiskUsageJob {
+		cronJob.AddMotioneyeDiskUsageJob()
+	}
+
+	if cfg.CronRunServerDiskUsageJob {
+		cronJob.AddServerDiskUsageJob()
 	}
 
 	if cfg.CronRunSpeedTestJob {
 		cronJob.AddSpeedTestJob()
 	}
 
-	cronJob.Start()
+	s := api.CreateServer(&logr, cfg, tgBot)
 
+	cronJob.Start()
 	logr.Info().Str("type", "core").Msg("Cron started")
+
+	tgBot.StartPolling(ctx, &logr, cfg)
+	logr.Info().Str("type", "core").Msg("Telegram polling started")
+
+	go s.Start()
+	logr.Info().Str("type", "core").Msg("Server started")
 
 	select {}
 }
