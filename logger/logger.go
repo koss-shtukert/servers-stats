@@ -16,9 +16,6 @@ func New(level string) (zerolog.Logger, error) {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
-	// Disable console writer to ensure JSON format
-	os.Setenv("NO_COLOR", "1")
-
 	logLevel, err := zerolog.ParseLevel(level)
 	if err != nil {
 		return zerolog.Logger{}, err
