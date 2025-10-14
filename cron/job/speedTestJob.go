@@ -3,10 +3,11 @@ package job
 import (
 	"context"
 	"fmt"
-	"github.com/koss-shtukert/servers-stats/common"
-	"github.com/koss-shtukert/servers-stats/config"
 	"strings"
 	"time"
+
+	"github.com/koss-shtukert/servers-stats/common"
+	"github.com/koss-shtukert/servers-stats/config"
 
 	"github.com/rs/zerolog"
 	"github.com/showwin/speedtest-go/speedtest"
@@ -15,7 +16,20 @@ import (
 func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func() {
 	return func() {
 		logger := l.With().Str("type", "SpeedTestJob").Logger()
-		logger.Debug().Msg("Starting")
+		start := time.Now()
+		logger.Info().Time("start_time", start).Msg("SpeedTest job started")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		defer cancel()
+		defer func() {
+			duration := time.Since(start)
+			logger.Info().Dur("duration", duration).Msg("SpeedTest job completed")
+		}()
+
+		speedtest.WithUserConfig(&speedtest.UserConfig{
+			Debug:      true,
+			SavingMode: true,
+		})
 
 		ctxUser, cancelUser := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancelUser()
@@ -24,7 +38,10 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 		errCh := make(chan error, 1)
 
 		go func() {
+			logger.Debug().Msg("Starting FetchUserInfo")
+			start := time.Now()
 			u, err := speedtest.FetchUserInfo()
+			logger.Debug().Dur("fetch_user_duration", time.Since(start)).Msg("FetchUserInfo completed")
 			if err != nil {
 				errCh <- err
 				return
@@ -46,15 +63,34 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			user = u
 		}
 
-		servers, err := speedtest.FetchServers()
-		if err != nil {
+		serversCh := make(chan speedtest.Servers, 1)
+		go func() {
+			logger.Debug().Msg("Starting FetchServers")
+			start := time.Now()
+			servers, err := speedtest.FetchServers()
+			logger.Debug().Dur("fetch_servers_duration", time.Since(start)).Msg("FetchServers completed")
+			if err != nil {
+				errCh <- err
+				return
+			}
+			serversCh <- servers
+		}()
+
+		var servers speedtest.Servers
+		select {
+		case <-ctx.Done():
+			logger.Error().Msg("FetchServers timeout")
+			n.SendMessage("⚠️ Speedtest: timeout під час отримання серверів")
+			return
+		case err := <-errCh:
 			logger.Err(err).Msg("FetchServers failed")
 			n.SendMessage("⚠️ Speedtest: не вдалося отримати список серверів")
 			return
+		case servers = <-serversCh:
 		}
 
 		var targets speedtest.Servers
-		targets, err = servers.FindServer([]int{})
+		targets, err := servers.FindServer([]int{})
 		if err != nil || len(targets) == 0 {
 			if err == nil {
 				err = fmt.Errorf("no server found")
@@ -64,18 +100,30 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			return
 		}
 		s := targets[0]
+		logger.Info().Str("server_name", s.Name).Str("server_country", s.Country).Str("server_id", s.ID).Msg("Selected speedtest server")
 
-		if err := s.PingTest(nil); err != nil {
+		logger.Debug().Msg("Starting PingTest")
+		if err := runWithTimeout(ctx, logger, "PingTest", func() error {
+			return s.PingTest(nil)
+		}); err != nil {
 			logger.Err(err).Msg("PingTest failed")
 			n.SendMessage("⚠️ Speedtest: помилка під час PingTest")
 			return
 		}
-		if err := s.DownloadTest(); err != nil {
+
+		logger.Debug().Msg("Starting DownloadTest")
+		if err := runWithTimeout(ctx, logger, "DownloadTest", func() error {
+			return s.DownloadTest()
+		}); err != nil {
 			logger.Err(err).Msg("DownloadTest failed")
 			n.SendMessage("⚠️ Speedtest: помилка під час DownloadTest")
 			return
 		}
-		if err := s.UploadTest(); err != nil {
+
+		logger.Debug().Msg("Starting UploadTest")
+		if err := runWithTimeout(ctx, logger, "UploadTest", func() error {
+			return s.UploadTest()
+		}); err != nil {
 			logger.Err(err).Msg("UploadTest failed")
 			n.SendMessage("⚠️ Speedtest: помилка під час UploadTest")
 			return
@@ -128,4 +176,23 @@ func speedStatus(dlMbps, ulMbps, pingMs float64, c *config.Config) string {
 		return "🟡 Degraded"
 	}
 	return "🟢 OK"
+}
+
+func runWithTimeout(ctx context.Context, logger zerolog.Logger, name string, fn func() error) error {
+	start := time.Now()
+	done := make(chan error, 1)
+	go func() {
+		logger.Debug().Str("operation", name).Msg("Operation started")
+		err := fn()
+		logger.Debug().Str("operation", name).Dur("duration", time.Since(start)).Err(err).Msg("Operation completed")
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Error().Str("operation", name).Dur("duration", time.Since(start)).Msg("Operation timeout")
+		return fmt.Errorf("%s timeout after %v", name, time.Since(start))
+	case err := <-done:
+		return err
+	}
 }

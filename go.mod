@@ -9,6 +9,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/showwin/speedtest-go v1.7.10
 	github.com/spf13/viper v1.20.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

@@ -9,3 +9,4 @@ services:
       - "1324:1324"
     volumes:
       - /:/host:ro
+      - ./logs:/app/logs
