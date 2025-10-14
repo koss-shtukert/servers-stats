@@ -14,13 +14,15 @@ import (
 )
 
 type Bot struct {
-	tgBot    *tgbotapi.BotAPI
-	chatId   int64
-	logger   *zerolog.Logger
-	lastCmd  map[string]time.Time
-	cmdMutex sync.RWMutex
-	running  map[string]bool
-	runMutex sync.RWMutex
+	tgBot       *tgbotapi.BotAPI
+	chatId      int64
+	logger      *zerolog.Logger
+	lastCmd     map[string]time.Time
+	cmdMutex    sync.RWMutex
+	running     map[string]bool
+	runMutex    sync.RWMutex
+	lastMessage time.Time
+	msgMutex    sync.Mutex
 }
 
 func CreateBot(c *config.Config, l *zerolog.Logger) (*Bot, error) {
@@ -60,14 +62,15 @@ func CreateBot(c *config.Config, l *zerolog.Logger) (*Bot, error) {
 
 func (b *Bot) StartPolling(ctx context.Context, l *zerolog.Logger, c *config.Config) {
 	go func() {
+		offset := 0
+
 		for {
 			select {
 			case <-ctx.Done():
 				b.logger.Info().Msg("Telegram polling stopped")
 				return
 			default:
-				// Use manual polling with proper error handling
-				u := tgbotapi.NewUpdate(0)
+				u := tgbotapi.NewUpdate(offset)
 				u.Timeout = 60
 
 				updates, err := b.tgBot.GetUpdates(u)
@@ -79,6 +82,7 @@ func (b *Bot) StartPolling(ctx context.Context, l *zerolog.Logger, c *config.Con
 
 				for _, update := range updates {
 					b.handleUpdate(update, l, c)
+					offset = update.UpdateID + 1
 				}
 			}
 		}
