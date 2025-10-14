@@ -1,29 +1,32 @@
-# dev | stage | prod
-app_env: dev
+# Server Configuration Template
+# Copy this file to config.yaml on your server and update values
 
-# panic | fatal | error | warn | info | debug | trace
-log_level: debug
+# Environment: dev | stage | prod
+app_env: prod
 
-# cron
+# Log level: panic | fatal | error | warn | info | debug | trace
+log_level: info
+
+# Cron Jobs Configuration
 cron_run_motioneye_disk_usage_job: false
-cron_motioneye_disk_usage_job_path: "/media/motioneye"
-cron_motioneye_disk_usage_job_interval: "0 * * * *"
+cron_motioneye_disk_usage_job_path: "/home"
+cron_motioneye_disk_usage_job_interval: "0 0 * * *"
 
 cron_run_server_disk_usage_job: false
 cron_server_disk_usage_job_path: "/"
-cron_server_disk_usage_job_interval: "0 * * * *"
+cron_server_disk_usage_job_interval: "0 */6 * * *"
 
 cron_run_speed_test_job: false
-cron_speed_test_job_interval: "*/30 * * * *"
-cron_speed_test_job_exp_down: 950.0
-cron_speed_test_job_exp_up: 950.0
+cron_speed_test_job_interval: "0 */30 * * * *"
+cron_speed_test_job_exp_down: 100.0
+cron_speed_test_job_exp_up: 50.0
 cron_speed_test_job_warn_pct: 0.80
 cron_speed_test_job_crit_pct: 0.60
-cron_speed_test_job_warn_lat: 25.0
-cron_speed_test_job_crit_lat: 40.0
-# cron
+cron_speed_test_job_warn_lat: 50.0
+cron_speed_test_job_crit_lat: 100.0
 
-# tgbot
-tgbot_api_key: ""
-tgbot_chat_id: ""
-# tgbot
+# Telegram Bot Configuration
+# Get your bot token from @BotFather
+# Get chat ID from @userinfobot
+tgbot_api_key: "YOUR_BOT_TOKEN_HERE"
+tgbot_chat_id: "YOUR_CHAT_ID_HERE"

@@ -49,13 +49,11 @@ func Load(path string) (*Config, error) {
 	}
 
 	// Set defaults
-	v.SetDefault("cron_run_disk_usage_job", false)
-	v.SetDefault("cron_disk_usage_job_path", "")
-	v.SetDefault("cron_disk_usage_job_interval", "")
-	v.SetDefault("cron_run_speedtest_job", false)
-	v.SetDefault("cron_speedtest_job_interval", "")
+	v.SetDefault("cron_run_motioneye_disk_usage_job", false)
+	v.SetDefault("cron_run_server_disk_usage_job", false)
+	v.SetDefault("cron_run_speed_test_job", false)
 
-	// Bind environment variables for sensitive data
+	// Bind environment variables for sensitive data (optional override)
 	v.BindEnv("tgbot_api_key", "TGBOT_API_KEY")
 	v.BindEnv("tgbot_chat_id", "TGBOT_CHAT_ID")
 

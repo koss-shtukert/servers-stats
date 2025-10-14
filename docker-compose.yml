@@ -3,10 +3,11 @@ version: '3.9'
 services:
   servers-stats:
     container_name: servers-stats
-    build: .
+    image: karakurtkoss/servers-stats:latest
     restart: unless-stopped
     ports:
       - "1324:1324"
     volumes:
       - /:/host:ro
       - ./logs:/app/logs
+      - ./config.yaml:/app/config.yaml:ro
