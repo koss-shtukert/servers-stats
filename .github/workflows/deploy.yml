@@ -1,0 +1,69 @@
+name: deploy-version
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+env:
+  GH_REGISTRY: ghcr.io # Github registry
+  FULL_IMAGE_NAME: ${{ github.repository }} # full image name: owner/image
+  IMAGE_NAME: servers-stats # image name: image
+
+jobs:
+  build-image:
+    # https://github.com/actions/runner-images
+    runs-on: ubuntu-latest
+
+    # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
+    permissions:
+      contents: read # for actions/checkout
+      packages: write # for OCI build
+
+    steps:
+
+      # Checkout
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Dockerhub credentials
+      - name: Log in to Dockerhub
+        uses: docker/login-action@v2
+        with:
+          # registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # Github container registry credentials
+      - name: Log in to the Github
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.GH_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      # Tags and labels
+      - name: Extract metadata (tags, labels) for image ${{ env.IMAGE_NAME }}
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+            ${{ env.GH_REGISTRY }}/${{ env.FULL_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+
+      # Build image and push to registries (Dockerhub and Github)
+      - name: Build and push docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            MY_VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            MY_BUILTBY=github-action
