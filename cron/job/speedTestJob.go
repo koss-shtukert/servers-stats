@@ -35,7 +35,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 		defer cancelUser()
 
 		userCh := make(chan *speedtest.User, 1)
-		errCh := make(chan error, 1)
+		userErrCh := make(chan error, 1)
 
 		go func() {
 			logger.Debug().Msg("Starting FetchUserInfo")
@@ -43,7 +43,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			u, err := speedtest.FetchUserInfo()
 			logger.Debug().Dur("fetch_user_duration", time.Since(start)).Msg("FetchUserInfo completed")
 			if err != nil {
-				errCh <- err
+				userErrCh <- err
 				return
 			}
 			userCh <- u
@@ -53,24 +53,25 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 		select {
 		case <-ctxUser.Done():
 			logger.Error().Msg("FetchUserInfo timeout")
-			n.SendMessage("⚠️ Speedtest: timeout під час отримання інформації про мережу")
+			n.SendMessage("⚠️ Speedtest: timeout while fetching network info")
 			return
-		case err := <-errCh:
+		case err := <-userErrCh:
 			logger.Err(err).Msg("FetchUserInfo failed")
-			n.SendMessage("⚠️ Speedtest: не вдалося отримати інформацію про мережу")
+			n.SendMessage("⚠️ Speedtest: failed to fetch network info")
 			return
 		case u := <-userCh:
 			user = u
 		}
 
 		serversCh := make(chan speedtest.Servers, 1)
+		serversErrCh := make(chan error, 1)
 		go func() {
 			logger.Debug().Msg("Starting FetchServers")
 			start := time.Now()
 			servers, err := speedtest.FetchServers()
 			logger.Debug().Dur("fetch_servers_duration", time.Since(start)).Msg("FetchServers completed")
 			if err != nil {
-				errCh <- err
+				serversErrCh <- err
 				return
 			}
 			serversCh <- servers
@@ -80,11 +81,11 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 		select {
 		case <-ctx.Done():
 			logger.Error().Msg("FetchServers timeout")
-			n.SendMessage("⚠️ Speedtest: timeout під час отримання серверів")
+			n.SendMessage("⚠️ Speedtest: timeout while fetching servers")
 			return
-		case err := <-errCh:
+		case err := <-serversErrCh:
 			logger.Err(err).Msg("FetchServers failed")
-			n.SendMessage("⚠️ Speedtest: не вдалося отримати список серверів")
+			n.SendMessage("⚠️ Speedtest: failed to fetch server list")
 			return
 		case servers = <-serversCh:
 		}
@@ -96,7 +97,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 				err = fmt.Errorf("no server found")
 			}
 			logger.Err(err).Msg("FindServer failed")
-			n.SendMessage("⚠️ Speedtest: не знайдено підходящого сервера")
+			n.SendMessage("⚠️ Speedtest: no suitable server found")
 			return
 		}
 		s := targets[0]
@@ -107,7 +108,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			return s.PingTest(nil)
 		}); err != nil {
 			logger.Err(err).Msg("PingTest failed")
-			n.SendMessage("⚠️ Speedtest: помилка під час PingTest")
+			n.SendMessage("⚠️ Speedtest: ping test failed")
 			return
 		}
 
@@ -116,7 +117,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			return s.DownloadTest()
 		}); err != nil {
 			logger.Err(err).Msg("DownloadTest failed")
-			n.SendMessage("⚠️ Speedtest: помилка під час DownloadTest")
+			n.SendMessage("⚠️ Speedtest: download test failed")
 			return
 		}
 
@@ -125,7 +126,7 @@ func SpeedTestJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func()
 			return s.UploadTest()
 		}); err != nil {
 			logger.Err(err).Msg("UploadTest failed")
-			n.SendMessage("⚠️ Speedtest: помилка під час UploadTest")
+			n.SendMessage("⚠️ Speedtest: upload test failed")
 			return
 		}
 

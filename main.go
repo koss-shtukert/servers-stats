@@ -54,8 +54,20 @@ func main() {
 	tgBot.StartPolling(ctx, &logr, cfg)
 	logr.Info().Str("type", "core").Msg("Telegram polling started")
 
-	go s.Start()
+	go func() {
+		if err := s.Start(); err != nil {
+			logr.Fatal().Err(err).Msg("Failed to start server")
+		}
+	}()
 	logr.Info().Str("type", "core").Msg("Server started")
 
-	select {}
+	<-ctx.Done()
+	logr.Info().Str("type", "core").Msg("Shutdown signal received")
+
+	// Graceful shutdown
+	if err := s.Shutdown(); err != nil {
+		logr.Error().Err(err).Msg("Error during server shutdown")
+	}
+
+	logr.Info().Str("type", "core").Msg("Application shutdown complete")
 }

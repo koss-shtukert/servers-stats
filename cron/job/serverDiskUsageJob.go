@@ -2,12 +2,17 @@ package job
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"os/exec"
+
 	"github.com/koss-shtukert/servers-stats/common"
 	"github.com/koss-shtukert/servers-stats/config"
 	"github.com/rs/zerolog"
-	"os/exec"
-	"strings"
 )
 
 func ServerDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func() {
@@ -18,20 +23,44 @@ func ServerDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) 
 
 		path := c.CronServerDiskUsageJobPath
 
-		cmd := exec.Command("sh", "-c", "df -h "+path)
+		// Validate and clean path
+		cleanPath := filepath.Clean(path)
+		if cleanPath == "." || cleanPath == "" {
+			logger.Error().Str("path", path).Msg("Invalid path provided")
+			n.SendMessage("⚠️ Server: invalid disk path provided")
+			return
+		}
+
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// Execute command safely
+		cmd := exec.CommandContext(ctx, "df", "-h", cleanPath)
+		logger.Debug().Str("command", "df -h").Str("path", cleanPath).Msg("Executing disk usage command")
+
 		var out, stderr bytes.Buffer
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
 
+		start := time.Now()
 		if err := cmd.Run(); err != nil {
-			logger.Err(err).Str("stderr", stderr.String()).Msg("Failed to execute df")
+			logger.Err(err).Str("stderr", stderr.String()).Str("path", cleanPath).Dur("duration", time.Since(start)).Msg("Failed to execute df")
+			n.SendMessage("⚠️ Server: failed to check disk usage")
 			return
 		}
+		logger.Debug().Dur("duration", time.Since(start)).Int("output_size", len(out.String())).Msg("Command executed successfully")
 
-		for _, line := range strings.Split(out.String(), "\n") {
+		output := out.String()
+		lines := strings.Split(output, "\n")
+		logger.Debug().Int("total_lines", len(lines)).Str("target_path", path).Msg("Parsing df output")
+
+		for i, line := range lines {
 			if strings.HasSuffix(line, path) {
+				logger.Debug().Int("line_number", i).Str("line_content", line).Msg("Found matching line")
 				fields := strings.Fields(line)
 				if len(fields) < 5 {
+					logger.Warn().Int("field_count", len(fields)).Str("line", line).Msg("Insufficient fields in df output line")
 					continue
 				}
 
@@ -41,16 +70,20 @@ func ServerDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) 
 
 				percent := 0
 				if _, err := fmt.Sscanf(usageStr, "%d%%", &percent); err != nil {
-					l.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
+					logger.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
+					// Continue with percent = 0 if parsing fails
 				}
 
+				logger.Info().Str("used", used).Str("available", avail).Str("usage", usageStr).Int("percentage", percent).Msg("Disk usage retrieved successfully")
 				n.SendMessage(formatServerDiskUsage(used, avail, usageStr, percent))
 				logger.Debug().Msg("Finished")
 				return
 			}
 		}
 
-		logger.Warn().Msgf("Could not parse disk usage from df output on path %s", path)
+		// No matching line found in df output
+		logger.Warn().Str("path", cleanPath).Int("total_lines", len(lines)).Str("df_output", strings.TrimSpace(output)).Msg("Could not parse disk usage from df output")
+		n.SendMessage("⚠️ Server: could not parse disk usage data")
 	}
 }
 

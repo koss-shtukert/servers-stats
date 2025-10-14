@@ -30,13 +30,13 @@ func NewCron(l *zerolog.Logger, cfg *config.Config, b *bot.Bot) *Cron {
 
 func (c *Cron) AddMotioneyeDiskUsageJob() {
 	if _, err := c.cron.AddFunc(c.config.CronMotioneyeDiskUsageJobInterval, job.MotioneyeDiskUsageJob(c.logger, c.config, c.tgBot)); err != nil {
-		c.logger.Err(err).Msg("Failed to schedule DiskUsage job")
+		c.logger.Err(err).Msg("Failed to schedule MotioneyeDiskUsage job")
 	}
 }
 
 func (c *Cron) AddServerDiskUsageJob() {
-	if _, err := c.cron.AddFunc(c.config.CronMotioneyeDiskUsageJobInterval, job.ServerDiskUsageJob(c.logger, c.config, c.tgBot)); err != nil {
-		c.logger.Err(err).Msg("Failed to schedule DiskUsage job")
+	if _, err := c.cron.AddFunc(c.config.CronServerDiskUsageJobInterval, job.ServerDiskUsageJob(c.logger, c.config, c.tgBot)); err != nil {
+		c.logger.Err(err).Msg("Failed to schedule ServerDiskUsage job")
 	}
 }
 

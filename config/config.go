@@ -32,6 +32,11 @@ func Load(path string) (*Config, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
 
+	// Enable environment variables support
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvPrefix("SERVERS_STATS")
+
 	switch {
 	case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml"):
 		v.SetConfigFile(path)
@@ -43,15 +48,24 @@ func Load(path string) (*Config, error) {
 		v.SetConfigName("config")
 	}
 
+	// Set defaults
 	v.SetDefault("cron_run_disk_usage_job", false)
 	v.SetDefault("cron_disk_usage_job_path", "")
 	v.SetDefault("cron_disk_usage_job_interval", "")
-
 	v.SetDefault("cron_run_speedtest_job", false)
 	v.SetDefault("cron_speedtest_job_interval", "")
 
+	// Bind environment variables for sensitive data
+	v.BindEnv("tgbot_api_key", "TGBOT_API_KEY")
+	v.BindEnv("tgbot_chat_id", "TGBOT_CHAT_ID")
+
+	// Try to read config file, but don't fail if it doesn't exist
+	// when using environment variables
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config.yaml: %w", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+		// Config file not found, continue with env vars and defaults
 	}
 
 	var cfg Config
@@ -67,6 +81,7 @@ func Load(path string) (*Config, error) {
 		cfg.CronRunServerDiskUsageJob = false
 	}
 
+	// Validate required fields
 	required := map[string]string{
 		"app_env":       cfg.Environment,
 		"log_level":     cfg.LogLevel,
@@ -75,8 +90,13 @@ func Load(path string) (*Config, error) {
 	}
 	for k, v := range required {
 		if strings.TrimSpace(v) == "" {
-			return nil, fmt.Errorf("required config %s is empty", k)
+			return nil, fmt.Errorf("required config %s is empty (set via config file or environment variable)", k)
 		}
+	}
+
+	// Validate API key format (basic check)
+	if !strings.Contains(cfg.TgBotApiKey, ":") {
+		return nil, fmt.Errorf("invalid telegram bot API key format")
 	}
 
 	return &cfg, nil

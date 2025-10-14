@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/koss-shtukert/servers-stats/api/rest/motioneye_disk_usage"
+	"github.com/koss-shtukert/servers-stats/api/rest/server_disk_usage"
 	"github.com/koss-shtukert/servers-stats/api/rest/speed_test"
 	"github.com/koss-shtukert/servers-stats/bot"
 	"github.com/koss-shtukert/servers-stats/config"
@@ -62,6 +63,7 @@ func CreateServer(l *zerolog.Logger, c *config.Config, b *bot.Bot) *Server {
 	e.HideBanner = true
 
 	motioneye_disk_usage.REST(l, e, c, b)
+	server_disk_usage.REST(l, e, c, b)
 	speed_test.REST(l, e, c, b)
 
 	s := &Server{
@@ -74,6 +76,21 @@ func CreateServer(l *zerolog.Logger, c *config.Config, b *bot.Bot) *Server {
 	return s
 }
 
-func (s *Server) Start() {
-	s.logger.Err(s.server.Start(":1324"))
+func (s *Server) Start() error {
+	s.logger.Info().Msg("Starting HTTP server on :1324")
+	if err := s.server.Start(":1324"); err != nil {
+		s.logger.Err(err).Msg("Failed to start HTTP server")
+		return err
+	}
+	return nil
+}
+
+func (s *Server) Shutdown() error {
+	s.logger.Info().Msg("Shutting down HTTP server")
+	if err := s.server.Close(); err != nil {
+		s.logger.Err(err).Msg("Failed to shutdown HTTP server")
+		return err
+	}
+	s.logger.Info().Msg("HTTP server shutdown complete")
+	return nil
 }

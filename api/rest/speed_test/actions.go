@@ -1,9 +1,10 @@
 package speed_test
 
 import (
+	"net/http"
+
 	"github.com/koss-shtukert/servers-stats/cron/job"
 	"github.com/rs/zerolog"
-	"net/http"
 
 	"github.com/koss-shtukert/servers-stats/bot"
 	"github.com/koss-shtukert/servers-stats/config"
@@ -16,8 +17,20 @@ func SpeedTest(l *zerolog.Logger, e *echo.Echo, cfg *config.Config, b *bot.Bot) 
 
 func handleSpeedTest(l *zerolog.Logger, cfg *config.Config, b *bot.Bot) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		go job.SpeedTestJob(l, cfg, b)()
+		// Use bot's rate limiting mechanism to prevent multiple speedtests
+		if !b.CanExecuteCommand("speedtest") {
+			return c.JSON(http.StatusTooManyRequests, map[string]string{
+				"error": "Speedtest is already running or rate limited",
+			})
+		}
 
-		return c.JSON(http.StatusOK, "Ok")
+		// Execute speedtest with proper control
+		go b.ExecuteJob("speedtest", func() {
+			job.SpeedTestJob(l, cfg, b)()
+		})
+
+		return c.JSON(http.StatusAccepted, map[string]string{
+			"message": "Speedtest started",
+		})
 	}
 }
