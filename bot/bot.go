@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,7 +77,16 @@ func (b *Bot) StartPolling(ctx context.Context, l *zerolog.Logger, c *config.Con
 				updates, err := b.tgBot.GetUpdates(u)
 				if err != nil {
 					b.logger.Err(err).Msg("Failed to get updates")
-					time.Sleep(5 * time.Second)
+
+					// Handle different types of errors
+					if strings.Contains(err.Error(), "lookup") || strings.Contains(err.Error(), "dial tcp") || strings.Contains(err.Error(), "server misbehaving") {
+						// DNS or network issues - longer backoff
+						b.logger.Warn().Msg("Network/DNS issue, backing off for 60 seconds")
+						time.Sleep(60 * time.Second)
+					} else {
+						// Other errors
+						time.Sleep(5 * time.Second)
+					}
 					continue
 				}
 
