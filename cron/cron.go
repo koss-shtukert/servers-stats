@@ -34,6 +34,12 @@ func (c *Cron) AddMotioneyeDiskUsageJob() {
 	}
 }
 
+func (c *Cron) AddPlexDiskUsageJob() {
+	if _, err := c.cron.AddFunc(c.config.CronPlexDiskUsageJobInterval, job.PlexDiskUsageJob(c.logger, c.config, c.tgBot)); err != nil {
+		c.logger.Err(err).Msg("Failed to schedule PlexDiskUsage job")
+	}
+}
+
 func (c *Cron) AddServerDiskUsageJob() {
 	if _, err := c.cron.AddFunc(c.config.CronServerDiskUsageJobInterval, job.ServerDiskUsageJob(c.logger, c.config, c.tgBot)); err != nil {
 		c.logger.Err(err).Msg("Failed to schedule ServerDiskUsage job")

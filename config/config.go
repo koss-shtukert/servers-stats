@@ -13,6 +13,9 @@ type Config struct {
 	CronRunMotioneyeDiskUsageJob      bool    `mapstructure:"cron_run_motioneye_disk_usage_job"`
 	CronMotioneyeDiskUsageJobPath     string  `mapstructure:"cron_motioneye_disk_usage_job_path"`
 	CronMotioneyeDiskUsageJobInterval string  `mapstructure:"cron_motioneye_disk_usage_job_interval"`
+	CronRunPlexDiskUsageJob           bool    `mapstructure:"cron_run_plex_disk_usage_job"`
+	CronPlexDiskUsageJobPath          string  `mapstructure:"cron_plex_disk_usage_job_path"`
+	CronPlexDiskUsageJobInterval      string  `mapstructure:"cron_plex_disk_usage_job_interval"`
 	CronRunServerDiskUsageJob         bool    `mapstructure:"cron_run_server_disk_usage_job"`
 	CronServerDiskUsageJobPath        string  `mapstructure:"cron_server_disk_usage_job_path"`
 	CronServerDiskUsageJobInterval    string  `mapstructure:"cron_server_disk_usage_job_interval"`
@@ -50,6 +53,7 @@ func Load(path string) (*Config, error) {
 
 	// Set defaults
 	v.SetDefault("cron_run_motioneye_disk_usage_job", false)
+	v.SetDefault("cron_run_plex_disk_usage_job", false)
 	v.SetDefault("cron_run_server_disk_usage_job", false)
 	v.SetDefault("cron_run_speed_test_job", false)
 
@@ -73,6 +77,10 @@ func Load(path string) (*Config, error) {
 
 	if strings.TrimSpace(cfg.CronMotioneyeDiskUsageJobPath) == "" {
 		cfg.CronRunMotioneyeDiskUsageJob = false
+	}
+
+	if strings.TrimSpace(cfg.CronPlexDiskUsageJobPath) == "" {
+		cfg.CronRunPlexDiskUsageJob = false
 	}
 
 	if strings.TrimSpace(cfg.CronServerDiskUsageJobPath) == "" {

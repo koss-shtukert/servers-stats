@@ -1,7 +1,9 @@
 package api
 
 import (
+	"github.com/koss-shtukert/servers-stats/api/rest/healthcheck"
 	"github.com/koss-shtukert/servers-stats/api/rest/motioneye_disk_usage"
+	"github.com/koss-shtukert/servers-stats/api/rest/plex_disk_usage"
 	"github.com/koss-shtukert/servers-stats/api/rest/server_disk_usage"
 	"github.com/koss-shtukert/servers-stats/api/rest/speed_test"
 	"github.com/koss-shtukert/servers-stats/bot"
@@ -62,7 +64,10 @@ func CreateServer(l *zerolog.Logger, c *config.Config, b *bot.Bot) *Server {
 
 	e.HideBanner = true
 
+	healthcheck.GET(e)
+
 	motioneye_disk_usage.REST(l, e, c, b)
+	plex_disk_usage.REST(l, e, c, b)
 	server_disk_usage.REST(l, e, c, b)
 	speed_test.REST(l, e, c, b)
 

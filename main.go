@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/koss-shtukert/servers-stats/api"
-	"github.com/koss-shtukert/servers-stats/cron"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/koss-shtukert/servers-stats/api"
+	"github.com/koss-shtukert/servers-stats/cron"
 
 	"github.com/koss-shtukert/servers-stats/bot"
 	"github.com/koss-shtukert/servers-stats/config"
@@ -36,6 +37,10 @@ func main() {
 
 	if cfg.CronRunMotioneyeDiskUsageJob {
 		cronJob.AddMotioneyeDiskUsageJob()
+	}
+
+	if cfg.CronRunPlexDiskUsageJob {
+		cronJob.AddPlexDiskUsageJob()
 	}
 
 	if cfg.CronRunServerDiskUsageJob {

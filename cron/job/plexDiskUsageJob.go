@@ -15,19 +15,19 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func MotioneyeDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func() {
+func PlexDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifier) func() {
 	return func() {
-		logger := l.With().Str("type", "MotioneyeDiskUsageJob").Logger()
+		logger := l.With().Str("type", "PlexDiskUsageJob").Logger()
 
 		logger.Debug().Msg("Starting")
 
-		path := c.CronMotioneyeDiskUsageJobPath
+		path := c.CronPlexDiskUsageJobPath
 
 		// Validate and clean path
 		cleanPath := filepath.Clean(path)
 		if cleanPath == "." || cleanPath == "" {
 			logger.Error().Str("path", path).Msg("Invalid path provided")
-			n.SendMessage("⚠️ Motioneye: invalid disk path provided")
+			n.SendMessage("⚠️ Plex: invalid disk path provided")
 			return
 		}
 
@@ -46,7 +46,7 @@ func MotioneyeDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifie
 		start := time.Now()
 		if err := cmd.Run(); err != nil {
 			logger.Err(err).Str("stderr", stderr.String()).Str("path", cleanPath).Dur("duration", time.Since(start)).Msg("Failed to execute df")
-			n.SendMessage("⚠️ Motioneye: failed to check disk usage")
+			n.SendMessage("⚠️ Plex: failed to check disk usage")
 			return
 		}
 		logger.Debug().Dur("duration", time.Since(start)).Int("output_size", len(out.String())).Msg("Command executed successfully")
@@ -71,7 +71,7 @@ func MotioneyeDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifie
 					}
 
 					logger.Info().Str("used", used).Str("available", avail).Str("usage", usageStr).Int("percentage", percent).Msg("Disk usage retrieved successfully")
-					n.SendMessage(formatMotioneyeDiskUsage(used, avail, usageStr, percent))
+					n.SendMessage(formatPlexDiskUsage(used, avail, usageStr, percent))
 
 					logger.Debug().Msg("Finished")
 					return
@@ -81,11 +81,11 @@ func MotioneyeDiskUsageJob(l *zerolog.Logger, c *config.Config, n common.Notifie
 
 		// No matching line found in df output
 		logger.Warn().Str("path", cleanPath).Int("total_lines", len(lines)).Str("df_output", strings.TrimSpace(output)).Msg("Could not parse disk usage from df output")
-		n.SendMessage("⚠️ Motioneye: could not parse disk usage data")
+		n.SendMessage("⚠️ Plex: could not parse disk usage data")
 	}
 }
 
-func formatMotioneyeDiskUsage(used, avail, usageStr string, percent int) string {
+func formatPlexDiskUsage(used, avail, usageStr string, percent int) string {
 	status := "🟢 OK"
 	if percent >= 90 {
 		status = "🔴 CRITICAL"
@@ -94,7 +94,7 @@ func formatMotioneyeDiskUsage(used, avail, usageStr string, percent int) string 
 	}
 
 	return fmt.Sprintf(
-		"💾 Motioneye disk usage\n\n"+
+		"💾 Plex disk usage\n\n"+
 			"📊 Used:    %s\n"+
 			"📦 Avail:   %s\n"+
 			"📈 Usage:   %s\n"+

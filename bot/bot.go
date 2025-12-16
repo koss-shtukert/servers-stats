@@ -51,7 +51,8 @@ func CreateBot(c *config.Config, l *zerolog.Logger) (*Bot, error) {
 		{Command: "start", Description: "Hi! Type /help to see available commands."},
 		{Command: "help", Description: "Show help information"},
 		{Command: "server_disk_usage", Description: "Show server disk usage"},
-		{Command: "motioneye_disk_usage", Description: "Show motioneye disk usage"},
+		{Command: "motioneye_disk_usage", Description: "Show Motioneye disk usage"},
+		{Command: "plex_disk_usage", Description: "Show Plex disk usage"},
 		{Command: "speedtest", Description: "Run speed test"},
 	}
 	if _, err := tgBot.Request(tgbotapi.NewSetMyCommands(commands...)); err != nil {
@@ -64,6 +65,8 @@ func CreateBot(c *config.Config, l *zerolog.Logger) (*Bot, error) {
 func (b *Bot) StartPolling(ctx context.Context, l *zerolog.Logger, c *config.Config) {
 	go func() {
 		offset := 0
+		networkBackoff := 30 * time.Second
+		maxNetworkBackoff := 5 * time.Minute
 
 		for {
 			select {
@@ -72,23 +75,31 @@ func (b *Bot) StartPolling(ctx context.Context, l *zerolog.Logger, c *config.Con
 				return
 			default:
 				u := tgbotapi.NewUpdate(offset)
-				u.Timeout = 60
+				u.Timeout = 30
 
 				updates, err := b.tgBot.GetUpdates(u)
 				if err != nil {
 					b.logger.Err(err).Msg("Failed to get updates")
 
 					// Handle different types of errors
-					if strings.Contains(err.Error(), "lookup") || strings.Contains(err.Error(), "dial tcp") || strings.Contains(err.Error(), "server misbehaving") {
-						// DNS or network issues - longer backoff
-						b.logger.Warn().Msg("Network/DNS issue, backing off for 60 seconds")
-						time.Sleep(60 * time.Second)
+					if strings.Contains(err.Error(), "lookup") || strings.Contains(err.Error(), "dial tcp") || strings.Contains(err.Error(), "i/o timeout") {
+						// DNS or network issues - exponential backoff
+						b.logger.Warn().Dur("backoff", networkBackoff).Msg("Network/DNS issue, backing off")
+						time.Sleep(networkBackoff)
+						networkBackoff = networkBackoff * 2
+						if networkBackoff > maxNetworkBackoff {
+							networkBackoff = maxNetworkBackoff
+						}
 					} else {
-						// Other errors
+						// Other errors - reset network backoff
+						networkBackoff = 30 * time.Second
 						time.Sleep(5 * time.Second)
 					}
 					continue
 				}
+
+				// Reset network backoff on success
+				networkBackoff = 30 * time.Second
 
 				for _, update := range updates {
 					b.handleUpdate(update, l, c)
@@ -112,6 +123,7 @@ func (b *Bot) handleUpdate(update tgbotapi.Update, l *zerolog.Logger, c *config.
 		msg := "Available commands:\n" +
 			"/server_disk_usage — Server disk usage\n" +
 			"/motioneye_disk_usage — Motioneye disk usage\n" +
+			"/plex_disk_usage — Plex disk usage\n" +
 			"/speedtest — Run speedtest\n"
 		b.SendMessage(msg)
 
@@ -128,6 +140,15 @@ func (b *Bot) handleUpdate(update tgbotapi.Update, l *zerolog.Logger, c *config.
 		if b.CanExecuteCommand("motioneye_disk_usage") {
 			go b.ExecuteJob("motioneye_disk_usage", func() {
 				job.MotioneyeDiskUsageJob(l, c, b)()
+			})
+		} else {
+			b.SendMessage("⚠️ Please wait before running this command again")
+		}
+
+	case "plex_disk_usage":
+		if b.CanExecuteCommand("plex_disk_usage") {
+			go b.ExecuteJob("plex_disk_usage", func() {
+				job.PlexDiskUsageJob(l, c, b)()
 			})
 		} else {
 			b.SendMessage("⚠️ Please wait before running this command again")

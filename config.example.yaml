@@ -16,6 +16,10 @@ cron_run_server_disk_usage_job: false
 cron_server_disk_usage_job_path: "/"
 cron_server_disk_usage_job_interval: "0 */6 * * *"
 
+cron_run_plex_disk_usage_job: false
+cron_plex_disk_usage_job_path: "/home"
+cron_plex_disk_usage_job_interval: "0 0 * * *"
+
 cron_run_speed_test_job: false
 cron_speed_test_job_interval: "0 */30 * * * *"
 cron_speed_test_job_exp_down: 100.0
