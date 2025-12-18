@@ -29,6 +29,16 @@ cron_speed_test_job_crit_pct: 0.60
 cron_speed_test_job_warn_lat: 50.0
 cron_speed_test_job_crit_lat: 100.0
 
+cron_run_motioneye_metrics_job: true
+cron_motioneye_metrics_job_interval: "*/5 * * * *"
+
+cron_run_server_metrics_job: true
+cron_server_metrics_job_interval: "*/5 * * * *"
+
+cron_run_plex_metrics_job: true
+cron_plex_metrics_job_interval: "*/5 * * * *"
+# Cron Jobs Configuration
+
 # Telegram Bot Configuration
 # Get your bot token from @BotFather
 # Get chat ID from @userinfobot

@@ -52,6 +52,24 @@ func (c *Cron) AddSpeedTestJob() {
 	}
 }
 
+func (c *Cron) AddMotioneyeMetricsJob() {
+	if _, err := c.cron.AddFunc(c.config.CronMotioneyeMetricsJobInterval, job.MotioneyeMetricsJob(c.logger, c.config)); err != nil {
+		c.logger.Err(err).Msg("Failed to schedule MotioneyeMetrics job")
+	}
+}
+
+func (c *Cron) AddServerMetricsJob() {
+	if _, err := c.cron.AddFunc(c.config.CronServerMetricsJobInterval, job.ServerMetricsJob(c.logger, c.config)); err != nil {
+		c.logger.Err(err).Msg("Failed to schedule ServerMetrics job")
+	}
+}
+
+func (c *Cron) AddPlexMetricsJob() {
+	if _, err := c.cron.AddFunc(c.config.CronPlexMetricsJobInterval, job.PlexMetricsJob(c.logger, c.config)); err != nil {
+		c.logger.Err(err).Msg("Failed to schedule PlexMetrics job")
+	}
+}
+
 func (c *Cron) Start() {
 	c.cron.Start()
 }

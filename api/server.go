@@ -1,7 +1,8 @@
 package api
 
 import (
-	"github.com/koss-shtukert/servers-stats/api/rest/healthcheck"
+	"net/http"
+
 	"github.com/koss-shtukert/servers-stats/api/rest/motioneye_disk_usage"
 	"github.com/koss-shtukert/servers-stats/api/rest/plex_disk_usage"
 	"github.com/koss-shtukert/servers-stats/api/rest/server_disk_usage"
@@ -10,6 +11,7 @@ import (
 	"github.com/koss-shtukert/servers-stats/config"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
 
@@ -64,7 +66,14 @@ func CreateServer(l *zerolog.Logger, c *config.Config, b *bot.Bot) *Server {
 
 	e.HideBanner = true
 
-	healthcheck.GET(e)
+	e.GET("/healthcheck", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"message": "Servers stats server",
+		})
+	})
+
+	// Prometheus metrics endpoint
+	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	motioneye_disk_usage.REST(l, e, c, b)
 	plex_disk_usage.REST(l, e, c, b)

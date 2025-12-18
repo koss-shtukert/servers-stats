@@ -51,6 +51,18 @@ func main() {
 		cronJob.AddSpeedTestJob()
 	}
 
+	if cfg.CronRunMotioneyeMetricsJob {
+		cronJob.AddMotioneyeMetricsJob()
+	}
+
+	if cfg.CronRunServerMetricsJob {
+		cronJob.AddServerMetricsJob()
+	}
+
+	if cfg.CronRunPlexMetricsJob {
+		cronJob.AddPlexMetricsJob()
+	}
+
 	s := api.CreateServer(&logr, cfg, tgBot)
 
 	cronJob.Start()

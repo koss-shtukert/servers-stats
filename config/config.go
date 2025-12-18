@@ -27,6 +27,12 @@ type Config struct {
 	CronSpeedTestJobCritPct           float64 `mapstructure:"cron_speed_test_job_crit_pct"`
 	CronSpeedTestJobWarnLat           float64 `mapstructure:"cron_speed_test_job_warn_lat"`
 	CronSpeedTestJobCritLat           float64 `mapstructure:"cron_speed_test_job_crit_lat"`
+	CronRunMotioneyeMetricsJob        bool    `mapstructure:"cron_run_motioneye_metrics_job"`
+	CronMotioneyeMetricsJobInterval   string  `mapstructure:"cron_motioneye_metrics_job_interval"`
+	CronRunServerMetricsJob           bool    `mapstructure:"cron_run_server_metrics_job"`
+	CronServerMetricsJobInterval      string  `mapstructure:"cron_server_metrics_job_interval"`
+	CronRunPlexMetricsJob             bool    `mapstructure:"cron_run_plex_metrics_job"`
+	CronPlexMetricsJobInterval        string  `mapstructure:"cron_plex_metrics_job_interval"`
 	TgBotApiKey                       string  `mapstructure:"tgbot_api_key"`
 	TgBotChatId                       string  `mapstructure:"tgbot_chat_id"`
 }
@@ -56,6 +62,9 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("cron_run_plex_disk_usage_job", false)
 	v.SetDefault("cron_run_server_disk_usage_job", false)
 	v.SetDefault("cron_run_speed_test_job", false)
+	v.SetDefault("cron_run_motioneye_metrics_job", false)
+	v.SetDefault("cron_run_server_metrics_job", false)
+	v.SetDefault("cron_run_plex_metrics_job", false)
 
 	// Bind environment variables for sensitive data (optional override)
 	v.BindEnv("tgbot_api_key", "TGBOT_API_KEY")
