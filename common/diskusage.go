@@ -52,10 +52,10 @@ func GetDiskUsage(logger *zerolog.Logger, path string) (*DiskUsageResult, error)
 		if strings.HasSuffix(line, path) {
 			logger.Debug().Int("line_number", i).Str("line_content", line).Msg("Found matching line")
 			fields := strings.Fields(line)
-			if len(fields) >= 5 {
-				used := fields[2]
-				avail := fields[3]
-				usageStr := fields[4]
+			if len(fields) >= 6 {
+				used := fields[len(fields)-4]
+				avail := fields[len(fields)-3]
+				usageStr := fields[len(fields)-2]
 
 				percent := 0
 				if _, err := fmt.Sscanf(usageStr, "%d%%", &percent); err != nil {
