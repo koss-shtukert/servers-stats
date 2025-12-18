@@ -52,7 +52,42 @@ func GetDiskUsage(logger *zerolog.Logger, path string) (*DiskUsageResult, error)
 		if strings.HasSuffix(line, path) {
 			logger.Debug().Int("line_number", i).Str("line_content", line).Msg("Found matching line")
 			fields := strings.Fields(line)
-			if len(fields) >= 6 {
+			
+			// Handle multi-line df output where filesystem name is on separate line
+			if len(fields) < 6 && len(fields) >= 5 {
+				// Line starts with whitespace, fields are: size, used, avail, use%, mount
+				used := fields[1]
+				avail := fields[2]
+				usageStr := fields[3]
+				
+				percent := 0
+				if _, err := fmt.Sscanf(usageStr, "%d%%", &percent); err != nil {
+					logger.Err(err).Str("raw", usageStr).Msg("Failed to parse usage percentage")
+					return nil, fmt.Errorf("failed to parse usage percentage: %w", err)
+				}
+				
+				usedBytes, err := ParseDiskSize(used)
+				if err != nil {
+					logger.Err(err).Str("used", used).Msg("Failed to parse used size")
+					return nil, fmt.Errorf("failed to parse used size: %w", err)
+				}
+				
+				availBytes, err := ParseDiskSize(avail)
+				if err != nil {
+					logger.Err(err).Str("avail", avail).Msg("Failed to parse available size")
+					return nil, fmt.Errorf("failed to parse available size: %w", err)
+				}
+				
+				return &DiskUsageResult{
+					Used:       used,
+					Available:  avail,
+					UsageStr:   usageStr,
+					Percentage: percent,
+					UsedBytes:  usedBytes,
+					AvailBytes: availBytes,
+				}, nil
+			} else if len(fields) >= 6 {
+				// Single line format: filesystem, size, used, avail, use%, mount
 				used := fields[len(fields)-4]
 				avail := fields[len(fields)-3]
 				usageStr := fields[len(fields)-2]
@@ -75,14 +110,15 @@ func GetDiskUsage(logger *zerolog.Logger, path string) (*DiskUsageResult, error)
 					return nil, fmt.Errorf("failed to parse available size: %w", err)
 				}
 
-				return &DiskUsageResult{
-					Used:       used,
-					Available:  avail,
-					UsageStr:   usageStr,
-					Percentage: percent,
-					UsedBytes:  usedBytes,
-					AvailBytes: availBytes,
-				}, nil
+					return &DiskUsageResult{
+						Used:       used,
+						Available:  avail,
+						UsageStr:   usageStr,
+						Percentage: percent,
+						UsedBytes:  usedBytes,
+						AvailBytes: availBytes,
+					}, nil
+				}
 			}
 		}
 	}

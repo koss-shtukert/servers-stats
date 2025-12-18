@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	// Disk usage metrics
 	DiskUsagePercent = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "disk_usage_percent",
@@ -25,10 +24,6 @@ var (
 			Help: "Disk available space in bytes",
 		}, []string{"path", "type"})
 )
-
-func RecordDiskUsage(path, diskType string, percent int) {
-	DiskUsagePercent.WithLabelValues(path, diskType).Set(float64(percent))
-}
 
 func RecordDiskUsageDetailed(path, diskType string, percent int, usedBytes, availBytes float64) {
 	DiskUsagePercent.WithLabelValues(path, diskType).Set(float64(percent))
